@@ -896,7 +896,14 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(S.ingreso>0){const e=document.getElementById('q-pri');if(e)e.value=S.ingreso;}
   updSaldo();
 });
-function updateBadge(){const n=new Date();document.getElementById('hbadge').textContent=`${n.getDate()<=15?'1ra':'2da'} quincena · ${n.toLocaleString('es-CO',{month:'short'})} ${n.getFullYear()}`;}
+function updateBadge() {
+  const n = new Date();
+  const q = n.getDate() <= 15 ? '1ra' : '2da';
+  const mes = n.toLocaleString('es-CO', { month: 'short' }).replace('.', '');
+  const anio = n.getFullYear();
+  
+  document.getElementById('hbadge').textContent = `${q} quincena · ${mes} ${anio}`;
+}
 function renderAll(){renderGastos();updateDash();renderMetas();renderDeudas();renderFijos();renderProyectos();renderPagos();renderHistorial();updSaldo();renderStats();}
 function go(id){NAVS.forEach(n=>{const s=document.getElementById('sec-'+n);if(s)s.classList.toggle('active',n===id);});document.querySelectorAll('.nb').forEach((b,i)=>{b.classList.toggle('active',NAVS[i]===id);});if(id==='cons')calcScore();if(id==='agen')renderCal();if(id==='stat')renderStats();if(id==='gast'){updSaldo();populateSelectMetas();}}
 function setQ(n,el){S.quincena=n;document.querySelectorAll('.qtab').forEach(t=>{t.classList.remove('active');t.setAttribute('aria-selected','false');});el.classList.add('active');el.setAttribute('aria-selected','true');renderDeudas();updateDash();}
@@ -965,17 +972,110 @@ function cMeta(){const M=+document.getElementById('ma-tot').value||0;const T=+do
 function cRet(){const ren=+document.getElementById('rt-ren').value||0;const ta=+document.getElementById('rt-tip').value||0;const ret=ren*ta;setHtml('rt-res',`<div style="display:flex;gap:14px;flex-wrap:wrap"><div><div class="crl">Retención</div><div class="mono" style="font-size:16px;font-weight:700;color:var(--dan)">${f(ret)}</div></div><div><div class="crl">💰 Neto a recibir</div><div class="crv">${f(ren-ret)}</div></div></div>`);}
 function cGMF(){const mo=+document.getElementById('gf-mo').value||0;const gmf=mo*0.004;setHtml('gf-res',`<div style="display:flex;gap:14px;flex-wrap:wrap"><div><div class="crl">GMF 4×1000</div><div class="mono" style="font-size:16px;font-weight:700;color:var(--a2)">${f(gmf)}</div></div><div><div class="crl">Total debitado</div><div class="crv">${f(mo+gmf)}</div></div></div>`);}
 // ESTADÍSTICAS COMPLETAS
-function renderStats(){const mes=mesStr();const catT={};S.gastos.filter(g=>g.tipo!=='ahorro'&&g.fecha&&g.fecha.startsWith(mes)).forEach(g=>{catT[g.cat]=(catT[g.cat]||0)+(g.montoTotal||g.monto);});const tot=Object.values(catT).reduce((s,v)=>s+v,0);if(tot>0){const segs=Object.entries(catT).map(([c,v])=>({v,color:CCOLORS[c]||'#666',label:CATS[c]||c,pct:Math.round(v/tot*100)})).sort((a,b)=>b.v-a.v);setHtml('pie-c',donut(segs));setHtml('pie-l',segs.map(s=>`<div class="leg-row"><div class="leg-dot" style="background:${s.color}"></div><span style="flex:1;font-size:12px">${s.label}</span><span class="mono" style="font-size:11px;color:var(--t3)">${s.pct}%</span><span class="mono" style="font-size:11px;margin-left:8px;font-weight:600">${f(s.v)}</span></div>`).join(''));// barras por categoría
-const maxCat=Math.max(...Object.values(catT),1);setHtml('stat-cats',Object.entries(catT).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>{const pct=val/maxCat*100;const exceso=S.ingreso>0?val/S.ingreso*100:0;const alerta=exceso>30?'<span class="pill pr" style="font-size:9px">Alto</span>':exceso>15?'<span class="pill py" style="font-size:9px">Moderado</span>':'';return`<div class="stat-bar-row"><div class="stat-bar-label">${CATS[cat]||cat} ${alerta}</div><div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:${pct}%;background:${CCOLORS[cat]||'#666'}"></div></div><div class="stat-bar-val">${f(val)}<span class="mono" style="color:var(--t3);font-size:10px;margin-left:4px">${exceso>0?Math.round(exceso)+'%':''}</span></div></div>`;}).join(''));}else{setHtml('pie-c','<div class="emp"><span class="emp-icon">◱</span>Sin gastos este mes para graficar</div>');setHtml('stat-cats','<div class="emp">Sin datos</div>');}
-// Historial
-const bEl=document.getElementById('bar-c');if(S.historial.length&&bEl){const rec=S.historial.slice(0,8).reverse();bEl.innerHTML=`<div style="overflow-x:auto" tabindex="0"><table><thead><tr><th>Período</th><th>Ingreso</th><th>Gastado</th><th>Ahorro</th><th>% Ahorro</th><th>% Hormiga</th><th>Tendencia</th></tr></thead><tbody>${rec.map(hx=>{const pA=hx.ingreso>0?Math.round(hx.ahorro/hx.ingreso*100):0;const pH=hx.ingreso>0?Math.round(hx.hormiga/hx.ingreso*100):0;const w=hx.ingreso>0?Math.min(hx.ahorro/hx.ingreso*100,100):0;const col=pA>=20?'var(--a1)':pA>=10?'var(--a2)':'var(--dan)';return`<tr><td style="font-size:11px;font-weight:600">${hx.periodo}</td><td class="ac mono" style="font-size:11px">${f(hx.ingreso)}</td><td class="ac mono" style="font-size:11px;color:var(--a3)">${f(hx.gastado)}</td><td class="ac mono" style="font-size:11px;color:var(--a1)">${f(hx.ahorro)}</td><td class="ac"><strong style="color:${col}">${pA}%</strong></td><td class="ac"><span style="color:${pH>15?'var(--dan)':pH>10?'var(--a2)':'var(--t3)';}">${pH}%</span></td><td style="min-width:80px;padding-right:12px"><div style="height:8px;background:var(--s3);border-radius:999px;overflow:hidden"><div style="height:100%;border-radius:999px;width:${w}%;background:${col};transition:width .6s ease"></div></div></td></tr>`;}).join('')}</tbody></table></div>`;const promA=rec.reduce((s,h)=>s+h.ahorro,0)/rec.length;const promH=rec.reduce((s,h)=>s+h.hormiga,0)/rec.length;const mejor=rec.reduce((b,h)=>h.ahorro>b.ahorro?h:b,rec[0]);setEl('st-ap',f(promA));setEl('st-hp',f(promH));setEl('st-mj',f(mejor.ahorro));
-// Tendencia tasa de ahorro
-const tendHtml=rec.map(hx=>{const pA=hx.ingreso>0?Math.round(hx.ahorro/hx.ingreso*100):0;const col=pA>=20?'var(--a1)':pA>=10?'var(--a2)':'var(--dan)';const w=Math.min(pA*2,100);return`<div class="stat-bar-row"><div class="stat-bar-label" style="font-size:10px">${hx.periodo.split('·')[0].trim()}</div><div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:${w}%;background:${col}"></div></div><div class="stat-bar-val" style="color:${col};font-weight:700">${pA}%</div></div>`;}).join('');setHtml('stat-trend',tendHtml);}else if(bEl){bEl.innerHTML='<div class="emp"><span class="emp-icon">≡</span>Cierra tu primera quincena para ver comparativos.</div>';}
-// Insights automáticos
-const insights=[];const tG=S.gastos.filter(g=>g.tipo!=='ahorro').reduce((s,g)=>s+(g.montoTotal||g.monto),0);const tH=S.gastos.filter(g=>g.hormiga).reduce((s,g)=>s+g.monto,0);const tA=S.gastos.filter(g=>g.tipo==='ahorro').reduce((s,g)=>s+g.monto,0);if(S.ingreso>0){if(tH>S.ingreso*0.1)insights.push({color:'var(--a2)',icon:'🐜',text:`Gastos hormiga: ${f(tH)} (${Math.round(tH/S.ingreso*100)}% del ingreso). Al mes: ~${f(tH*2)}. Al año: ~${f(tH*24)}.`});if(tG>0&&S.ingreso>0){const catMax=Object.entries(catT).sort((a,b)=>b[1]-a[1])[0];if(catMax)insights.push({color:'var(--a4)',icon:'📊',text:`Tu mayor gasto del mes es <strong>${CATS[catMax[0]]||catMax[0]}</strong> con ${f(catMax[1])} (${Math.round(catMax[1]/S.ingreso*100)}% del ingreso).`});}if(tA/S.ingreso<0.1)insights.push({color:'var(--dan)',icon:'⚠️',text:`Tasa de ahorro: ${Math.round(tA/S.ingreso*100)}%. La meta mínima recomendada es 10–20%. Ajusta tus gastos de deseo.`});else insights.push({color:'var(--a1)',icon:'✅',text:`Tasa de ahorro: ${Math.round(tA/S.ingreso*100)}%. ${tA/S.ingreso>=0.2?'¡Excelente! Superas el 20% recomendado.':'Vas bien. La meta ideal es 20%.'}`});const cPer=S.deudas.filter(d=>d.periodicidad==='quincenal').reduce((s,d)=>s+d.cuota,0)+(S.quincena===1?S.deudas.filter(d=>d.periodicidad==='mensual').reduce((s,d)=>s+d.cuota,0):0);if(cPer/S.ingreso>0.3)insights.push({color:'var(--dan)',icon:'💳',text:`Cuotas de deuda = ${Math.round(cPer/S.ingreso*100)}% del ingreso. Superas el límite del 30% — hay riesgo de sobreendeudamiento.`});}if(!insights.length)insights.push({color:'var(--t3)',icon:'📝',text:'Registra gastos y configura tu quincena para ver insights personalizados.'});setHtml('stat-insights',insights.map(i=>`<div class="insight-card" style="border-left-color:${i.color}"><span style="font-size:15px;margin-right:6px">${i.icon}</span>${i.text}</div>`).join(''));calcScore();}
+function renderStats(){
+  const mes=mesStr();
+  const catT={};
+  S.gastos.filter(g=>g.tipo!=='ahorro'&&g.fecha&&g.fecha.startsWith(mes)).forEach(g=>{catT[g.cat]=(catT[g.cat]||0)+(g.montoTotal||g.monto);});
+  const tot=Object.values(catT).reduce((s,v)=>s+v,0);
+  
+  if(tot>0){
+    const segs=Object.entries(catT).map(([c,v])=>({v,color:CCOLORS[c]||'#666',label:CATS[c]||c,pct:Math.round(v/tot*100)})).sort((a,b)=>b.v-a.v);
+    setHtml('pie-c',donut(segs));
+    setHtml('pie-l',segs.map(s=>`<div class="leg-row"><div class="leg-dot" style="background:${s.color}"></div><span style="flex:1;font-size:12px">${s.label}</span><span class="mono" style="font-size:11px;color:var(--t3)">${s.pct}%</span><span class="mono" style="font-size:11px;margin-left:8px;font-weight:600">${f(s.v)}</span></div>`).join(''));
+    
+    // barras por categoría
+    const maxCat=Math.max(...Object.values(catT),1);
+    setHtml('stat-cats',Object.entries(catT).sort((a,b)=>b[1]-a[1]).map(([cat,val])=>{
+      const pct=val/maxCat*100;
+      const exceso=S.ingreso>0?val/S.ingreso*100:0;
+      const alerta=exceso>30?'<span class="pill pr" style="font-size:9px">Alto</span>':exceso>15?'<span class="pill py" style="font-size:9px">Moderado</span>':'';
+      return`<div class="stat-bar-row"><div class="stat-bar-label">${CATS[cat]||cat} ${alerta}</div><div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:${pct}%;background:${CCOLORS[cat]||'#666'}"></div></div><div class="stat-bar-val">${f(val)}<span class="mono" style="color:var(--t3);font-size:10px;margin-left:4px">${exceso>0?Math.round(exceso)+'%':''}</span></div></div>`;
+    }).join(''));
+  }else{
+    setHtml('pie-c','<div class="emp"><span class="emp-icon">◱</span>Sin gastos este mes para graficar</div>');
+    setHtml('stat-cats','<div class="emp">Sin datos</div>');
+  }
+  
+  // Historial
+  const bEl=document.getElementById('bar-c');
+  if(S.historial.length&&bEl){
+    const rec=S.historial.slice(0,8).reverse();
+    bEl.innerHTML=`<div style="overflow-x:auto" tabindex="0"><table><thead><tr><th>Período</th><th>Ingreso</th><th>Gastado</th><th>Ahorro</th><th>% Ahorro</th><th>% Hormiga</th><th>Tendencia</th></tr></thead><tbody>${rec.map(hx=>{
+      const pA=hx.ingreso>0?Math.round(hx.ahorro/hx.ingreso*100):0;
+      const pH=hx.ingreso>0?Math.round(hx.hormiga/hx.ingreso*100):0;
+      const w=hx.ingreso>0?Math.min(hx.ahorro/hx.ingreso*100,100):0;
+      const col=pA>=20?'var(--a1)':pA>=10?'var(--a2)':'var(--dan)';
+      // Aquí estaba el bug. ¡Ya está corregido!
+      return`<tr><td style="font-size:11px;font-weight:600">${hx.periodo}</td><td class="ac mono" style="font-size:11px">${f(hx.ingreso)}</td><td class="ac mono" style="font-size:11px;color:var(--a3)">${f(hx.gastado)}</td><td class="ac mono" style="font-size:11px;color:var(--a1)">${f(hx.ahorro)}</td><td class="ac"><strong style="color:${col}">${pA}%</strong></td><td class="ac"><span style="color:${pH>15?'var(--dan)':pH>10?'var(--a2)':'var(--t3)'};">${pH}%</span></td><td style="min-width:80px;padding-right:12px"><div style="height:8px;background:var(--s3);border-radius:999px;overflow:hidden"><div style="height:100%;border-radius:999px;width:${w}%;background:${col};transition:width .6s ease"></div></div></td></tr>`;
+    }).join('')}</tbody></table></div>`;
+    
+    const promA=rec.reduce((s,h)=>s+h.ahorro,0)/rec.length;
+    const promH=rec.reduce((s,h)=>s+h.hormiga,0)/rec.length;
+    const mejor=rec.reduce((b,h)=>h.ahorro>b.ahorro?h:b,rec[0]);
+    setEl('st-ap',f(promA));
+    setEl('st-hp',f(promH));
+    setEl('st-mj',f(mejor.ahorro));
+    
+    // Tendencia tasa de ahorro
+    const tendHtml=rec.map(hx=>{
+      const pA=hx.ingreso>0?Math.round(hx.ahorro/hx.ingreso*100):0;
+      const col=pA>=20?'var(--a1)':pA>=10?'var(--a2)':'var(--dan)';
+      const w=Math.min(pA*2,100);
+      return`<div class="stat-bar-row"><div class="stat-bar-label" style="font-size:10px">${hx.periodo.split('·')[0].trim()}</div><div class="stat-bar-wrap"><div class="stat-bar-fill" style="width:${w}%;background:${col}"></div></div><div class="stat-bar-val" style="color:${col};font-weight:700">${pA}%</div></div>`;
+    }).join('');
+    setHtml('stat-trend',tendHtml);
+  }else if(bEl){
+    bEl.innerHTML='<div class="emp"><span class="emp-icon">≡</span>Cierra tu primera quincena para ver comparativos.</div>';
+  }
+  
+  // Insights automáticos
+  const insights=[];
+  const tG=S.gastos.filter(g=>g.tipo!=='ahorro').reduce((s,g)=>s+(g.montoTotal||g.monto),0);
+  const tH=S.gastos.filter(g=>g.hormiga).reduce((s,g)=>s+g.monto,0);
+  const tA=S.gastos.filter(g=>g.tipo==='ahorro').reduce((s,g)=>s+g.monto,0);
+  if(S.ingreso>0){
+    if(tH>S.ingreso*0.1)insights.push({color:'var(--a2)',icon:'🐜',text:`Gastos hormiga: ${f(tH)} (${Math.round(tH/S.ingreso*100)}% del ingreso). Al mes: ~${f(tH*2)}. Al año: ~${f(tH*24)}.`});
+    if(tG>0&&S.ingreso>0){
+      const catMax=Object.entries(catT).sort((a,b)=>b[1]-a[1])[0];
+      if(catMax)insights.push({color:'var(--a4)',icon:'📊',text:`Tu mayor gasto del mes es <strong>${CATS[catMax[0]]||catMax[0]}</strong> con ${f(catMax[1])} (${Math.round(catMax[1]/S.ingreso*100)}% del ingreso).`});
+    }
+    if(tA/S.ingreso<0.1)insights.push({color:'var(--dan)',icon:'⚠️',text:`Tasa de ahorro: ${Math.round(tA/S.ingreso*100)}%. La meta mínima recomendada es 10–20%. Ajusta tus gastos de deseo.`});
+    else insights.push({color:'var(--a1)',icon:'✅',text:`Tasa de ahorro: ${Math.round(tA/S.ingreso*100)}%. ${tA/S.ingreso>=0.2?'¡Excelente! Superas el 20% recomendado.':'Vas bien. La meta ideal es 20%.'}`});
+    
+    const cPer=S.deudas.filter(d=>d.periodicidad==='quincenal').reduce((s,d)=>s+d.cuota,0)+(S.quincena===1?S.deudas.filter(d=>d.periodicidad==='mensual').reduce((s,d)=>s+d.cuota,0):0);
+    if(cPer/S.ingreso>0.3)insights.push({color:'var(--dan)',icon:'💳',text:`Cuotas de deuda = ${Math.round(cPer/S.ingreso*100)}% del ingreso. Superas el límite del 30% — hay riesgo de sobreendeudamiento.`});
+  }
+  
+  if(!insights.length)insights.push({color:'var(--t3)',icon:'📝',text:'Registra gastos y configura tu quincena para ver insights personalizados.'});
+  setHtml('stat-insights',insights.map(i=>`<div class="insight-card" style="border-left-color:${i.color}"><span style="font-size:15px;margin-right:6px">${i.icon}</span>${i.text}</div>`).join(''));
+  calcScore();
+}
 function donut(segs){const W=220,cx=110,cy=110,R=85,r=50;const tot=segs.reduce((s,x)=>s+x.v,0);if(!tot)return'';let ang=-Math.PI/2,paths='';segs.forEach(s=>{const a=(s.v/tot)*2*Math.PI;if(a<0.01){ang+=a;return;}const x1=cx+R*Math.cos(ang),y1=cy+R*Math.sin(ang),x2=cx+R*Math.cos(ang+a),y2=cy+R*Math.sin(ang+a);const xi1=cx+r*Math.cos(ang),yi1=cy+r*Math.sin(ang),xi2=cx+r*Math.cos(ang+a),yi2=cy+r*Math.sin(ang+a);const lg=a>Math.PI?1:0;paths+=`<path d="M${xi1},${yi1} L${x1},${y1} A${R},${R},0,${lg},1,${x2},${y2} L${xi2},${yi2} A${r},${r},0,${lg},0,${xi1},${yi1}Z" fill="${s.color}" opacity="0.88"><title>${s.label}: ${f(s.v)} (${s.pct}%)</title></path>`;ang+=a;});return`<svg viewBox="0 0 ${W} ${W}" style="max-width:220px;display:block;margin:0 auto" role="img"><title>Distribución de gastos</title>${paths}<text x="${cx}" y="${cy-7}" text-anchor="middle" fill="#edf2ee" font-family="JetBrains Mono" font-weight="700" font-size="15">${f(tot)}</text><text x="${cx}" y="${cy+12}" text-anchor="middle" fill="#4a6350" font-family="Plus Jakarta Sans" font-size="11">total</text></svg>`;}
 function calcScore(){if(!S.ingreso){const sn=document.getElementById('sc-circle');if(sn){sn.textContent='—';sn.style.borderColor='var(--b2)';}setEl('sc-l','Configura tu quincena para ver el puntaje');setHtml('sc-d','');return;}const tG=S.gastos.filter(g=>g.tipo!=='ahorro').reduce((s,g)=>s+(g.montoTotal||g.monto),0);const tA=S.gastos.filter(g=>g.tipo==='ahorro').reduce((s,g)=>s+g.monto,0);const tH=S.gastos.filter(g=>g.hormiga).reduce((s,g)=>s+g.monto,0);const cPer=S.deudas.filter(d=>d.periodicidad==='quincenal').reduce((s,d)=>s+d.cuota,0)+(S.quincena===1?S.deudas.filter(d=>d.periodicidad==='mensual').reduce((s,d)=>s+d.cuota,0):0);const p=getPct();let sc=100;const det=[];const pg=tG/S.ingreso;if(pg>0.9){sc-=25;det.push({t:'⚠️ Gastas >90% del ingreso',ok:false});}else if(pg>0.75){sc-=12;det.push({t:'🟡 Gastas >75%',ok:false});}else det.push({t:'✅ Gastos bajo control',ok:true});const pa=tA/S.ingreso;if(pa>=p.a/100)det.push({t:`✅ Meta de ahorro ${p.a}% cumplida`,ok:true});else if(pa>0){sc-=10;det.push({t:'🟡 Ahorro por debajo de meta',ok:false});}else{sc-=25;det.push({t:'❌ Sin ahorro registrado',ok:false});}if(tH/S.ingreso>0.2){sc-=20;det.push({t:'🐜 Hormiga muy alta +20%',ok:false});}else if(tH/S.ingreso>0.1){sc-=8;det.push({t:'🟡 Hormiga moderada',ok:false});}else det.push({t:'✅ Hormiga controlada',ok:true});if(cPer/S.ingreso>0.3){sc-=15;det.push({t:'💳 Deudas >30% del ingreso',ok:false});}else if(cPer>0)det.push({t:'✅ Deudas bajo el 30%',ok:true});if(S.metas.length>0)det.push({t:'🎯 Metas de ahorro activas',ok:true});else{sc-=5;det.push({t:'🎯 Sin metas definidas',ok:false});}sc=Math.max(0,Math.min(100,Math.round(sc)));const col=sc>=75?'var(--a1)':sc>=50?'var(--a2)':'var(--dan)';const sn=document.getElementById('sc-circle');if(sn){sn.textContent=sc;sn.style.borderColor=col;sn.style.color=col;}setEl('sc-l',sc>=80?'¡Excelente control financiero! 🏆':sc>=60?'Buen camino — hay margen de mejora':'Necesitas ajustes importantes');setHtml('sc-d',det.map(d=>`<div style="color:${d.ok?'var(--a1)':'var(--t3)'};margin-bottom:4px;font-size:12px">${d.t}</div>`).join(''));}
-function renderTips(){const tips=[{i:'🏦',t:'Págate a ti primero',b:'Apenas recibas tu quincena, transfiere el % de ahorro antes de gastar en cualquier otra cosa.'},{i:'📌',t:'Los fijos son la base',b:'Configura todos tus gastos fijos antes de planear cualquier otra cosa. Son tu piso inamovible.'},{i:'🐜',t:'La hormiga te drena sin que la veas',b:'Un tinto diario = ~$540k/año. Registra todo 15 días y te sorprenderá el total.'},{i:'📅',t:'Anticipa los pagos grandes',b:'Agéndalos con meses de anticipación. Si en octubre pagas matrícula, empieza a separar en julio.'},{i:'💳',t:'Estrategia avalancha',b:'Paga mínimos en todas y concentra el excedente en la deuda de mayor tasa. Pagas menos intereses.'},{i:'🗂️',t:'Proyectos: ahorra antes de gastar',b:'Primero completa la meta de ahorro del proyecto, luego registra los gastos del evento.'},{i:'🌱',t:'El tiempo vale más que el monto',b:'$200k/quincena a 12% E.A. = ~$5.2M al año. Empieza hoy aunque sea con poco.'},{i:'🔒',t:'Fondo de emergencia primero',b:'Asegura 3–6 meses de gastos en Nu Cajitas. Sin colchón, cualquier imprevisto destruye todo.'},{i:'📊',t:'Revisa tus estadísticas mensualmente',b:'El gráfico de categorías te muestra dónde crece el gasto sin que te des cuenta.'},{i:'💡',t:'30% máximo en cuotas',b:'Si tus cuotas superan el 30% del ingreso, hay riesgo de sobreendeudamiento. Renegocia.'}];setHtml('tip-lst',tips.map(t=>`<div class="tip"><i style="font-style:normal;font-size:20px;display:block;margin-bottom:6px">${t.i}</i><strong>${t.t}</strong><br><span style="color:var(--t3)">${t.b}</span></div>`).join(''));}
+function renderTips() {
+  const tips = [
+    { i: '🏦', t: 'Págate a ti primero', b: 'Apenas recibas tu quincena, transfiere el % de ahorro antes de gastar en cualquier otra cosa.' },
+    { i: '📌', t: 'Los fijos son la base', b: 'Configura todos tus gastos fijos antes de planear cualquier otra cosa. Son tu piso inamovible.' },
+    { i: '🐜', t: 'La hormiga te drena sin que la veas', b: 'Un tinto diario = ~$540k/año. Registra todo 15 días y te sorprenderá el total.' },
+    { i: '📅', t: 'Anticipa los pagos grandes', b: 'Agéndalos con meses de anticipación. Si en octubre pagas matrícula, empieza a separar en julio.' },
+    { i: '💳', t: 'Estrategia avalancha', b: 'Paga mínimos en todas y concentra el excedente en la deuda de mayor tasa. Pagas menos intereses.' },
+    { i: '🗂️', t: 'Proyectos: ahorra antes de gastar', b: 'Primero completa la meta de ahorro del proyecto, luego registra los gastos del evento.' },
+    { i: '🌱', t: 'El tiempo vale más que el monto', b: '$200k/quincena a 12% E.A. = ~$5.2M al año. Empieza hoy aunque sea con poco.' },
+    { i: '🔒', t: 'Fondo de emergencia primero', b: 'Asegura 3–6 meses de gastos en Nu Cajitas. Sin colchón, cualquier imprevisto destruye todo.' },
+    { i: '📊', t: 'Revisa tus estadísticas mensualmente', b: 'El gráfico de categorías te muestra dónde crece el gasto sin que te des cuenta.' },
+    { i: '💡', t: '30% máximo en cuotas', b: 'Si tus cuotas superan el 30% del ingreso, hay riesgo de sobreendeudamiento. Renegocia.' }
+  ];
+
+  const html = tips.map(t => `
+    <div class="tip">
+      <i style="font-style:normal;font-size:20px;display:block;margin-bottom:6px">${t.i}</i>
+      <strong>${t.t}</strong><br>
+      <span style="color:var(--t3)">${t.b}</span>
+    </div>
+  `).join('');
+
+  setHtml('tip-lst', html);
+}
 // MODALES
 function openM(id){const el=document.getElementById(id);el.classList.add('open');const first=el.querySelector('input,select,textarea,button:not(.mclose)');if(first)setTimeout(()=>first.focus(),80);}
 function closeM(id){document.getElementById(id).classList.remove('open');}
