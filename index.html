@@ -896,14 +896,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(S.ingreso>0){const e=document.getElementById('q-pri');if(e)e.value=S.ingreso;}
   updSaldo();
 });
-function updateBadge() {
-  const n = new Date();
-  const q = n.getDate() <= 15 ? '1ra' : '2da';
-  const mes = n.toLocaleString('es-CO', { month: 'short' }).replace('.', '');
-  const anio = n.getFullYear();
-  
-  document.getElementById('hbadge').textContent = `${q} quincena · ${mes} ${anio}`;
-}
+function updateBadge(){const n=new Date();document.getElementById('hbadge').textContent=`${n.getDate()<=15?'1ra':'2da'} quincena · ${n.toLocaleString('es-CO',{month:'short'})} ${n.getFullYear()}`;}
 function renderAll(){renderGastos();updateDash();renderMetas();renderDeudas();renderFijos();renderProyectos();renderPagos();renderHistorial();updSaldo();renderStats();}
 function go(id){NAVS.forEach(n=>{const s=document.getElementById('sec-'+n);if(s)s.classList.toggle('active',n===id);});document.querySelectorAll('.nb').forEach((b,i)=>{b.classList.toggle('active',NAVS[i]===id);});if(id==='cons')calcScore();if(id==='agen')renderCal();if(id==='stat')renderStats();if(id==='gast'){updSaldo();populateSelectMetas();}}
 function setQ(n,el){S.quincena=n;document.querySelectorAll('.qtab').forEach(t=>{t.classList.remove('active');t.setAttribute('aria-selected','false');});el.classList.add('active');el.setAttribute('aria-selected','true');renderDeudas();updateDash();}
