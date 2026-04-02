@@ -307,6 +307,31 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(22,32,25,.6)}.ac
   .fr{flex-direction:column}.mc-val{font-size:20px}
   .stat-grid{grid-template-columns:1fr}
 }
+
+/* ─── TEMA CLARO ─────────────────────────────────────── */
+body.light-theme {
+  /* fondos */
+  --bg:#f4f7f5; --s1:#ffffff; --s2:#f0f3f1; --s3:#e6ece8;
+  /* bordes */
+  --b1:#d4ddd7; --b2:#c2cdc5; --b3:#abbab0;
+  /* texto */
+  --t1:#080c0a; --t2:#3c5243; --t3:#5c7565;
+  /* acentos (ligeramente oscurecidos para contraste en fondo claro) */
+  --a1:#00ba6d; 
+}
+
+body.light-theme::before {
+  opacity: 0.4; /* Suaviza los gradientes de fondo */
+}
+
+/* Ajustes específicos para legibilidad en modo claro */
+body.light-theme .logo { 
+  background: linear-gradient(135deg, var(--a1), #009988); 
+  -webkit-background-clip: text; 
+}
+body.light-theme .btn.bp { 
+  color: #ffffff; /* Texto blanco en el botón principal para mejor contraste */
+}
 </style>
 </head>
 <body>
@@ -333,6 +358,8 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(22,32,25,.6)}.ac
     <button class="nb" onclick="go('cons')"><span class="ni">✦</span>Consejos</button>
   </nav>
   <div class="hbadge" id="hbadge">—</div>
+  <button class="nb" id="btn-theme" onclick="toggleTheme()" style="margin-left:5px; font-size:16px; padding:2px 8px;" aria-label="Alternar modo de color">☀️</button>
+</header>
 </header>
 
 <main id="main" role="main">
@@ -887,6 +914,8 @@ const CCOLORS={alimentacion:'#00dc82',transporte:'#3b9eff',vivienda:'#b44eff',se
 const NAVS=['dash','quin','gast','fijo','meta','deu','proy','agen','calc','stat','hist','cons'];
 
 window.addEventListener('DOMContentLoaded',()=>{
+  /* NUEVO: Cargar preferencia de tema */
+  if(localStorage.getItem('fco_theme') === 'light') toggleTheme();
   loadData();updateBadge();populateSelectMetas();renderAll();renderTips();calcScore();
   cCDT();cCre();cIC();cMeta();cRet();cGMF();
   const hoy=new Date();
@@ -1097,6 +1126,12 @@ if('serviceWorker'in navigator){window.addEventListener('load',()=>{navigator.se
 let deferredPrompt=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;const b=document.getElementById('btn-install');if(b)b.style.display='flex';});
 window.instalarApp=async function(){if(!deferredPrompt)return;deferredPrompt.prompt();deferredPrompt=null;};
+// TEMA CLARO / OSCURO
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light-theme');
+  document.getElementById('btn-theme').textContent = isLight ? '🌙' : '☀️';
+  localStorage.setItem('fco_theme', isLight ? 'light' : 'dark');
+}
 </script>
 </body>
 </html>
