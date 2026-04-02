@@ -167,6 +167,14 @@ tr:last-child td{border-bottom:none}tr:hover td{background:var(--sur2)}.ac{font-
   .mv{font-size:18px}
 }
 </style>
+<link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#4eff91">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FinanzasCO">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
 </head>
 <body>
 <a href="#main" class="skip">Saltar al contenido</a>
@@ -1774,5 +1782,25 @@ function loadData() {
   }
 }
 </script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(r => console.log('SW ok:', r.scope))
+        .catch(e => console.error('SW error:', e));
+    });
+  }
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault(); deferredPrompt = e;
+    const b = document.getElementById('btn-install');
+    if (b) b.style.display = 'flex';
+  });
+  window.instalarApp = async function() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt = null;
+  };
+  </script>
 </body>
 </html>
